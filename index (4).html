@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Emergency SOS — Nearby Hospitals & Help</title>
+<style>
+  :root{
+    --red:#c62828; --dark:#2b2b2b; --muted:#666;
+    --card-bg:#fff; --bg:#fff5f5;
+  }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:var(--dark)}
+  .wrap{max-width:1000px;margin:18px auto;padding:18px;}
+  header{display:flex;align-items:center;gap:12px}
+  .logo{width:56px;height:56px;border-radius:8px;background:var(--red);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px}
+  h1{margin:0;font-size:20px}
+  p.lead{margin:6px 0 14px 0;color:var(--muted);font-size:14px}
+  .topbar{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .search{flex:1;display:flex;gap:8px}
+  input.searchbox{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:14px}
+  button.btn{background:var(--red);color:#fff;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+  .card{background:var(--card-bg);border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(198,40,40,0.06);border:1px solid rgba(0,0,0,0.04)}
+  .stateBtn{display:block;padding:12px;border-radius:8px;background:linear-gradient(180deg,var(--red),#b71c1c);color:#fff;text-align:center;font-weight:700;text-decoration:none}
+  .muted{color:var(--muted);font-size:13px}
+  .small{font-size:13px;color:#444'}
+  .breadcrumb{margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .crumb{background:#fff;padding:6px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.04);font-size:13px}
+  .list{margin-top:12px}
+  .hospital-row{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.04);background:#fff;margin-bottom:10px}
+  .thumb{width:120px;height:80px;border-radius:8px;object-fit:cover;border:1px solid #eee}
+  .h-name{font-weight:700;margin:0 0 6px 0}
+  .h-addr{margin:0;color:var(--muted);font-size:13px}
+  .rating{font-weight:700;color:#444;margin-left:6px}
+  .contact{font-size:13px;color:var(--muted);margin-top:6px}
+  .actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+  .linkbtn{background:transparent;border:1px solid var(--red);color:var(--red);padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600}
+  footer{margin-top:20px;color:var(--muted);font-size:13px;text-align:center;padding-bottom:30px}
+  .section-title{font-weight:800;margin:6px 0 10px 0;color:var(--red)}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.thumb{width:90px;height:60px}}
+  @media(max-width:600px){.grid{grid-template-columns:1fr}header{flex-direction:column;align-items:flex-start}.search{width:100%}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">SOS</div>
+      <div>
+        <h1>Emergency SOS — Nearby Hospitals & Help</h1>
+        <p class="lead">Click a state, then a district to see hospitals, pharmacies, ratings & contacts. Demo for educational use.</p>
+      </div>
+    </header>
+
+    <div class="topbar">
+      <div class="search">
+        <input id="searchBox" class="searchbox" placeholder="Search hospital, pharmacy or medicine (e.g. Paracetamol)"/>
+        <button class="btn" id="searchBtn">Search</button>
+      </div>
+      <button class="btn" id="homeBtn">Home</button>
+    </div>
+
+    <div id="breadcrumb" class="breadcrumb"></div>
+
+    <div id="main" style="margin-top:12px">
+      <div id="statesView" class="grid"></div>
+      <div id="districtsView" style="display:none"></div>
+      <div id="hospitalsView" style="display:none"></div>
+      <div id="detailView" style="display:none"></div>
+      <div id="searchView" style="display:none"></div>
+    </div>
+
+    <footer>© 2025 Emergency SOS | Created by Noah</footer>
+  </div>
+
+<script>
+// SITE DATA with ratings and contacts and real image URLs
+const siteData = {
+  "Tamil Nadu": {
+    districts: {
+      "Chennai": {
+        hospitals:[
+          { name:"Apollo Hospitals, Greams Road", address:"Greams Rd, Thousand Lights, Chennai", lat:13.0624, lon:80.2580,
+            rating:4.6, phone:"+91-44-2829-0000",
+            photo:"https://upload.wikimedia.org/wikipedia/commons/6/6b/Apollo_Hospitals_Logo.png",
+            medicines:["Paracetamol","Amoxicillin","Salbutamol inhaler"] },
+          { name:"MIOT International Hospital, Manapakkam", address:"Manapakkam, Chennai", lat:13.0105, lon:80.1656,
+            rating:4.5, phone:"+91-44-2299-3333",
+            photo:"https://miotinternational.com/wp-content/uploads/2020/05/MIOT-Logo.png",
+            medicines:["Paracetamol","IV fluids","Ceftriaxone"] }
+        ],
+        pharmacies:[
+          { name:"Apollo Pharmacy - T. Nagar", address:"T. Nagar, Chennai", lat:13.0412, lon:80.2337, phone:"+91-44-2431-1111",
+            photo:"https://images.unsplash.com/photo-1580281657523-2e4c1d5d6b4a?auto=format&fit=crop&w=800&q=60" },
+          { name:"MedPlus Pharmacy - Anna Salai", address:"Anna Salai, Chennai", lat:13.0599, lon:80.2476, phone:"+91-44-2857-2222",
+            photo:"https://images.unsplash.com/photo-1587502536263-4f3c4b4c52d9?auto=format&fit=crop&w=800&q=60" }
+        ]
+      },
+      "Salem": {
+        hospitals:[
+          { name:"Manipal Hospitals Salem", address:"NH-44, Salem", lat:11.6641, lon:78.1465,
+            rating:4.3, phone:"+91-427-243-3333",
+            photo:"https://www.manipalhospitals.com/static/media/logo.3b2f7e2d.svg",
+            medicines:["Paracetamol","Diclofenac","Pantoprazole"] },
+          { name:"SKS Hospital & Research Centre, Salem", address:"Alagapuram, Salem", lat:11.6578, lon:78.1645,
+            rating:4.0, phone:"+91-427-243-4444",
+            photo:"https://images.unsplash.com/photo-1576765607921-6d9862f2b0fd?auto=format&fit=crop&w=800&q=60",
+            medicines:["Paracetamol","Metformin","Insulin"] }
+        ],
+        pharmacies:[
+          { name:"Salem Medicals - New Fairlands", address:"New Fairlands, Salem", lat:11.6648, lon:78.1542, phone:"+91-427-250-1111",
+            photo:"https://images.unsplash.com/photo-1582719478173-1b3a9d7f2d0b?auto=format&fit=crop&w=800&q=60" },
+          { name:"Sri Pharmacy - Alagapuram", address:"Alagapuram, Salem", lat:11.6590, lon:78.1650, phone:"+91-427-250-2222",
+            photo:"https://images.unsplash.com/photo-1587502536263-4f3c4b4c52d9?auto=format&fit=crop&w=800&q=60" }
+        ]
+      },
+      "Coimbatore": {
+        hospitals:[
+          { name:"PSG Hospitals", address:"Peelamedu, Coimbatore", lat:11.0190, lon:77.0122,
+            rating:4.4, phone:"+91-422-431-1111",
+            photo:"https://psghospitals.com/wp-content/uploads/2020/12/psgh-logo.png",
+            medicines:["Paracetamol","Metformin","Cefixime"] },
+          { name:"KG Hospital", address:"Arts College Rd, Coimbatore", lat:11.0084, lon:76.9676,
+            rating:4.2, phone:"+91-422-252-3333",
+            photo:"https://kghospital.com/assets/images/logo.png",
+            medicines:["Paracetamol","IV fluids","Antibiotics"] }
+        ],
+        pharmacies:[
+          { name:"MedPlus Pharmacy - Gandhipuram", address:"Gandhipuram, Coimbatore", lat:11.0170, lon:76.9722, phone:"+91-422-230-1111",
+            photo:"https://images.unsplash.com/photo-1576765607921-6d9862f2b0fd?auto=format&fit=crop&w=800&q=60" },
+          { name:"Apollo Pharmacy - RS Puram", address:"RS Puram, Coimbatore", lat:11.0088, lon:76.9550, phone:"+91-422-230-2222",
+            photo:"https://images.unsplash.com/photo-1580281657523-2e4c1d5d6b4a?auto=format&fit=crop&w=800&q=60" }
+        ]
+      },
+      "Madurai": {
+        hospitals:[
+          { name:"Velammal Medical College Hospital", address:"Anuppanadi, Madurai", lat:9.9021, lon:78.1348,
+            rating:4.1, phone:"+91-452-260-1111",
+            photo:"https://images.unsplash.com/photo-1582719478173-1b3a9d7f2d0b?auto=format&fit=crop&w=800&q=60",
+            medicines:["Paracetamol","Antibiotics","ORS"] },
+          { name:"Meenakshi Mission Hospital", address:"Lake Area, Madurai", lat:9.9380, lon:78.1370,
+            rating:4.5, phone:"+91-452-260-2222",
+            photo:"https://meenakshihospital.in/assets/images/logo.png",
+            medicines:["Paracetamol","Anti-inflammatory","Antacid"] }
+        ],
+        pharmacies:[
+          { name:"MedPlus Pharmacy - K.K. Nagar", address:"K.K. Nagar, Madurai", lat:9.9352, lon:78.1243, phone:"+91-452-260-3333",
+            photo:"https://images.unsplash.com/photo-1586773860416-61b4a6d3b8f9?auto=format&fit=crop&w=800&q=60" },
+          { name:"Apollo Pharmacy - Tallakulam", address:"Tallakulam, Madurai", lat:9.9431, lon:78.1298, phone:"+91-452-260-4444",
+            photo:"https://images.unsplash.com/photo-1587502536263-4f3c4b4c52d9?auto=format&fit=crop&w=800&q=60" }
+        ]
+      },
+      "Tiruchirappalli": {
+        hospitals:[
+          { name:"Kauvery Hospital", address:"Tennur, Tiruchirappalli", lat:10.8132, lon:78.6871,
+            rating:4.2, phone:"+91-431-241-1111",
+            photo:"https://www.kauveryhospitals.com/assets/images/logo.png",
+            medicines:["Paracetamol","IV fluids","Ceftriaxone"] },
+          { name:"Chennai Medical College Hospital", address:"Irungalur, Tiruchirappalli", lat:10.8393, lon:78.7055,
+            rating:4.0, phone:"+91-431-241-2222",
+            photo:"https://www.cmch-vellore.edu/assets/img/logo.png",
+            medicines:["Paracetamol","Antibiotics","Saline"] }
+        ],
+        pharmacies:[
+          { name:"MedPlus Pharmacy - Srirangam", address:"Srirangam, Tiruchirappalli", lat:10.8624, lon:78.6922, phone:"+91-431-241-3333",
+            photo:"https://images.unsplash.com/photo-1576765607921-6d9862f2b0fd?auto=format&fit=crop&w=800&q=60" },
+          { name:"Apollo Pharmacy - Thillai Nagar", address:"Thillai Nagar, Tiruchirappalli", lat:10.8201, lon:78.6824, phone:"+91-431-241-4444",
+            photo:"https://images.unsplash.com/photo-1580281657523-2e4c1d5d6b4a?auto=format&fit=crop&w=800&q=60" }
+        ]
+      }
+    }
+  },
+
+  "Kerala": {
+    districts: {
+      "Thiruvananthapuram":[
+        { name:"Thiruvananthapuram Medical College", address:"Papanasam, Trivandrum", lat:8.4874, lon:76.9479, rating:4.1, phone:"+91-471-250-1111",
+          photo:"https://images.unsplash.com/photo-1582719478173-1b3a9d7f2d0b?auto=format&fit=crop&w=800&q=60", medicines:["Paracetamol","Amoxicillin"] },
+        { name:"KIMS Hospital, Trivandrum", address:"Neyyatinkara Road", lat:8.4950, lon:76.9396, rating:4.3, phone:"+91-471-250-2222",
+          photo:"https://www.kimshospital.com/assets/images/logo.png", medicines:["Paracetamol","Ondansetron"] }
+      ],
+      "Kochi":[
+        { name:"Lakeshore Hospital, Kochi", address:"Town Centre Rd", lat:9.9699, lon:76.3006, rating:4.4, phone:"+91-484-280-1111",
+          photo:"https://www.lakeshorehospital.com/wp-content/uploads/2019/06/logo.png", medicines:["Paracetamol","Azithromycin"] },
+        { name:"Aster Medcity, Kochi", address:"Cheranallur", lat:10.0050, lon:76.3105, rating:4.5, phone:"+91-484-301-1000",
+          photo:"https://www.asterdmhealthcare.com/images/logo.png", medicines:["Paracetamol","Cefixime"] }
+      ]
+    }
+  },
+
+  "Karnataka": {
+    districts: {
+      "Bengaluru":[
+        { name:"Victoria Hospital, Bengaluru", address:"K.R. Circle", lat:12.9718, lon:77.5950, rating:4.0, phone:"+91-80-2222-1111",
+          photo:"https://images.unsplash.com/photo-1580281657523-2e4c1d5d6b4a?auto=format&fit=crop&w=800&q=60", medicines:["Paracetamol"] },
+        { name:"Narayana Health City, Bengaluru", address:"Tavarekere", lat:12.9186, lon:77.6101, rating:4.3, phone:"+91-80-4939-0000",
+          photo:"https://www.narayanahealth.org/assets/images/logo.svg", medicines:["Paracetamol","Ceftriaxone"] }
+      ],
+      "Mysuru":[
+        { name:"K.R. Hospital (Govt), Mysuru", address:"Nanjangud Road", lat:12.2958, lon:76.6394, rating:4.0, phone:"+91-821-241-1111",
+          photo:"https://images.unsplash.com/photo-1576765607921-6d9862f2b0fd?auto=format&fit=crop&w=800&q=60", medicines:["Paracetamol"] },
+        { name:"Apollo Hospitals, Mysuru", address:"V.V. Mohalla", lat:12.3072, lon:76.6496, rating:4.2, phone:"+91-821-241-2222",
+          photo:"https://www.apollohospitals.com/images/logo.png", medicines:["Paracetamol","Cefixime"] }
+      ]
+    }
+  },
+
+  "Andhra Pradesh": {
+    districts: {
+      "Visakhapatnam":[
+        { name:"Government General Hospital, Vizag", address:"Dwaraka Nagar", lat:17.6868, lon:83.2185, rating:4.0, phone:"+91-891-256-1111",
+          photo:"https://images.unsplash.com/photo-1582719478173-1b3a9d7f2d0b?auto=format&fit=crop&w=800&q=60", medicines:["Paracetamol"] },
+        { name:"King George Hospital, Vizag", address:"Seethammadhara", lat:17.7060, lon:83.2330, rating:4.1, phone:"+91-891-256-2222",
+          photo:"https://images.unsplash.com/photo-1580281657523-2e4c1d5d6b4a?auto=format&fit=crop&w=800&q=60", medicines:["Paracetamol"] }
+      ],
+      "Vijayawada":[
+        { name:"Government General Hospital, Vijayawada", address:"Arundelpet", lat:16.5062, lon:80.6480, rating:4.0, phone:"+91-866-253-1111",
+          photo:"https://images.unsplash.com/photo-1587502536263-4f3c4b4c52d9?auto=format&fit=crop&w=800&q=60", medicines:["Paracetamol"] },
+        { name:"GSL Hospitals, Vijayawada", address:"Labbipet", lat:16.5086, lon:80.6300, rating:4.2, phone:"+91-866-253-2222",
+          photo:"https://gslhospitals.com/assets/images/logo.png", medicines:["Paracetamol"] }
+      ]
+    }
+  },
+
+  "Telangana": {
+    districts: {
+      "Hyderabad":[
+        { name:"Osmania General Hospital, Hyderabad", address:"Masab Tank", lat:17.3850, lon:78.4867, rating:4.0, phone:"+91-40-2323-1111",
+          photo:"https://images.unsplash.com/photo-1576765607921-6d9862f2b0fd?auto=format&fit=crop&w=800&q=60", medicines:["Paracetamol"] },
+        { name:"Apollo Hospitals, Jubilee Hills", address:"Jubilee Hills", lat:17.4200, lon:78.4136, rating:4.4, phone:"+91-40-2355-0000",
+          photo:"https://www.apollohospitals.com/images/logo.png", medicines:["Paracetamol"] }
+      ],
+      "Warangal":[
+        { name:"Warangal Government Hospital", address:"Near RTC Complex", lat:17.9689, lon:79.5942, rating:3.9, phone:"+91-870-245-1111",
+          photo:"https://images.unsplash.com/photo-1580281657523-2e4c1d5d6b4a?auto=format&fit=crop&w=800&q=60", medicines:["Paracetamol"] },
+        { name:"Kamineni Hospitals, Warangal (Private)", address:"Kazipet Rd", lat:17.9750, lon:79.5949, rating:4.1, phone:"+91-870-245-2222",
+          photo:"https://kamineni.com/assets/images/logo.png", medicines:["Paracetamol"] }
+      ]
+    }
+  }
+};
+
+// UI elements
+const statesView=document.getElementById('statesView');
+const districtsView=document.getElementById('districtsView');
+const hospitalsView=document.getElementById('hospitalsView');
+const detailView=document.getElementById('detailView');
+const searchView=document.getElementById('searchView');
+const breadcrumb=document.getElementById('breadcrumb');
+const searchBox=document.getElementById('searchBox');
+const searchBtn=document.getElementById('searchBtn');
+const homeBtn=document.getElementById('homeBtn');
+
+function clearAll(){ [districtsView,hospitalsView,detailView,searchView,statesView].forEach(v=>v.style.display='none'); breadcrumb.innerHTML=''; }
+
+// show states
+function showStates(){
+  clearAll();
+  statesView.style.display='grid';
+  statesView.innerHTML='';
+  for(const s of Object.keys(siteData)){
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML=`<a href="#" class="stateBtn" data-state="${s}">${s}</a><p class="muted" style="margin-top:8px">Click to view districts & hospitals</p>`;
+    statesView.appendChild(card);
+  }
+  breadcrumb.innerHTML=`<div class="crumb">Home</div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// show districts
+function showDistricts(state){
+  clearAll();
+  districtsView.style.display='block';
+  const districts=siteData[state].districts;
+  let html=`<div class="card"><strong>${state}</strong><div class="muted small">Select district below</div></div>`;
+  html+=`<div class="card" style="margin-top:12px">`;
+  for(const d of Object.keys(districts)){
+    html+=`<div style="margin-bottom:8px"><button class="btn" style="background:#b71c1c" onclick="showHospitals('${escape(d)}','${escape(d)}','${escape(state)}')">${d}</button></div>`;
+  }
+  html+=`</div>`;
+  districtsView.innerHTML=html;
+  breadcrumb.innerHTML=`<div class="crumb">Home</div><div class="crumb">${state}</div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// show hospitals and pharmacies for a district
+function showHospitals(districtKey,districtName,state){
+  clearAll();
+  hospitalsView.style.display='block';
+  const dData = siteData[state].districts[districtName];
+  // support array or object
+  let hospitals = [], pharmacies = [];
+  if(Array.isArray(dData)) hospitals = dData;
+  else { hospitals = dData.hospitals||[]; pharmacies = dData.pharmacies||[]; if(dData instanceof Array) hospitals=dData; }
+  let html = `<div class="card"><strong>${districtName}, ${state}</strong><div class="muted small">Top hospitals</div></div>`;
+  html += `<div class="card" style="margin-top:12px">`;
+  if(hospitals.length===0) html += `<div class="muted small">No hospitals listed.</div>`;
+  for(const h of hospitals){
+    html += `<div class="hospital-row"><img class="thumb" src="${h.photo||'https://via.placeholder.com/160x100?text=Hospital'}" alt="${h.name}" onerror="this.src='https://via.placeholder.com/160x100?text=Hospital'"/><div style="flex:1"><div class="h-name">${h.name}<span class="rating">⭐ ${h.rating? (h.rating+'/5') : '—'}</span></div><div class="h-addr">${h.address}</div><div class="contact">📞 ${h.phone || 'N/A'}</div><div class="actions"><button class="linkbtn" onclick="openMap(${h.lat},${h.lon})">Open Map</button><button class="linkbtn" onclick="showDetail('hospital','${escape(state)}','${escape(districtName)}','${escape(h.name)}')">View</button></div></div></div>`;
+  }
+  html += `</div>`;
+  if(pharmacies.length>0){
+    html += `<div style="margin-top:14px"><div class="section-title">Nearby Pharmacies</div></div><div class="card" style="margin-top:8px">`;
+    for(const p of pharmacies){
+      html += `<div class="hospital-row"><img class="thumb" src="${p.photo||'https://via.placeholder.com/160x100?text=Pharmacy'}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/160x100?text=Pharmacy'"/><div style="flex:1"><div class="h-name">${p.name}</div><div class="h-addr">${p.address}</div><div class="contact">📞 ${p.phone || 'N/A'}</div><div class="actions"><button class="linkbtn" onclick="openMap(${p.lat},${p.lon})">Open Map</button><button class="linkbtn" onclick="showDetail('pharmacy','${escape(state)}','${escape(districtName)}','${escape(p.name)}')">View</button></div></div></div>`;
+    }
+    html += `</div>`;
+  }
+  hospitalsView.innerHTML = html;
+  breadcrumb.innerHTML = `<div class="crumb">Home</div><div class="crumb">${state}</div><div class="crumb">${districtName}</div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// open google maps
+function openMap(lat,lon){ window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`,'_blank'); }
+
+// show details
+function showDetail(kind,state,district,name){
+  clearAll();
+  detailView.style.display='block';
+  const dData = siteData[state].districts[district];
+  let hospitals=[], pharmacies=[];
+  if(Array.isArray(dData)) hospitals=dData; else { hospitals=dData.hospitals||[]; pharmacies=dData.pharmacies||[]; }
+  let item = null;
+  if(kind==='hospital') item = hospitals.find(x=>x.name===name);
+  else item = pharmacies.find(x=>x.name===name);
+  if(!item){ detailView.innerHTML=`<div class="card">Details not found</div>`; return; }
+  let html=`<div class="card"><div class="h-name">${item.name} <span class="rating">⭐ ${item.rating? (item.rating+'/5') : ''}</span></div><div class="muted small">${item.address}</div><div style="margin-top:10px"><img src="${item.photo||'https://via.placeholder.com/800x400?text=Image'}" style="width:100%;height:280px;object-fit:cover;border-radius:8px" onerror="this.src='https://via.placeholder.com/800x400?text=Image'"/></div><div class="contact" style="margin-top:8px">📞 ${item.phone || 'N/A'}</div>`;
+  if(kind==='hospital'){ html += `<hr><div><strong>Medicines / Common treatments:</strong><ul>`; for(const m of (item.medicines||[])) html += `<li>${m}</li>`; html += `</ul></div>`; }
+  html += `<div class="actions" style="margin-top:8px"><button class="linkbtn" onclick="openMap(${item.lat},${item.lon})">Open Map</button></div></div>`;
+  detailView.innerHTML=html;
+  breadcrumb.innerHTML=`<div class="crumb">Home</div><div class="crumb">${state}</div><div class="crumb">${district}</div><div class="crumb">${item.name}</div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// search
+function doSearch(q){
+  q=(q||'').trim().toLowerCase();
+  if(!q) return alert('Type hospital, pharmacy or medicine');
+  clearAll();
+  searchView.style.display='block';
+  let results=[];
+  for(const [state,stInfo] of Object.entries(siteData)){
+    for(const [district,dVal] of Object.entries(stInfo.districts)){
+      let hospitals = [], pharmacies = [];
+      if(Array.isArray(dVal)) hospitals = dVal; else { hospitals = dVal.hospitals||[]; pharmacies = dVal.pharmacies||[]; }
+      for(const h of hospitals){
+        const txt = `${h.name} ${h.address} ${h.medicines? h.medicines.join(' ') : ''}`.toLowerCase();
+        if(txt.includes(q)) results.push({type:'hospital',state,district,item:h});
+      }
+      for(const p of pharmacies){
+        const txt = `${p.name} ${p.address}`.toLowerCase();
+        if(txt.includes(q)) results.push({type:'pharmacy',state,district,item:p});
+      }
+    }
+  }
+  let html=`<div class="card"><strong>Search results (${results.length})</strong></div>`;
+  for(const r of results){
+    const it=r.item;
+    html += `<div class="hospital-row"><img class="thumb" src="${it.photo||'https://via.placeholder.com/160x100'}" onerror="this.src='https://via.placeholder.com/160x100'"/><div style="flex:1"><div class="h-name">${it.name} <span class="rating">${r.type==='hospital' && it.rating ? ('⭐ '+it.rating+'/5') : ''}</span></div><div class="small">${it.address} — ${r.district}, ${r.state}</div><div class="contact">📞 ${it.phone||'N/A'}</div><div class="actions"><button class="linkbtn" onclick="openMap(${it.lat},${it.lon})">Open Map</button><button class="linkbtn" onclick="showDetail('${r.type}','${escape(r.state)}','${escape(r.district)}','${escape(it.name)}')">View</button></div></div></div>`;
+  }
+  if(results.length===0) html += `<div class="card">No results found</div>`;
+  searchView.innerHTML=html;
+  breadcrumb.innerHTML=`<div class="crumb">Home</div><div class="crumb">Search</div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function escape(s){ return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+// events
+document.addEventListener('click', function(e){
+  if(e.target.matches('.stateBtn')){ e.preventDefault(); const st=e.target.dataset.state; showDistricts(st); }
+});
+searchBtn.onclick = ()=> doSearch(searchBox.value);
+homeBtn.onclick = ()=> showStates();
+searchBox.addEventListener('keydown', e=> { if(e.key==='Enter') doSearch(searchBox.value); });
+
+// initial
+showStates();
+
+</script>
+</body>
+</html>
